@@ -1,0 +1,7 @@
+splitwise>=3.0.0
+psycopg2-binary
+pydantic-settings
+python-dotenv
+fastapi
+uvicorn[standard]
+jinja2

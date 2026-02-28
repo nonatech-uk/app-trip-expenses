@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Trips{% endblock %}
+{% block content %}
+<h1>Trips</h1>
+
+{% for trip in trips %}
+<a href="/t/{{ trip.slug }}" class="card" style="display:block">
+  <strong>{{ trip.name }}</strong>
+  <span class="badge">{{ trip.currency }}</span>
+  <div class="muted">{{ trip.member_count }} people, {{ trip.expense_count }} expenses</div>
+</a>
+{% endfor %}
+
+{% if not trips %}
+<p class="muted">No trips yet.</p>
+{% endif %}
+
+<h2>New Trip</h2>
+<form method="post" action="/" class="card">
+  <label for="name">Trip name</label>
+  <input type="text" id="name" name="name" required placeholder="Italy 2026">
+
+  <div class="grid-2">
+    <div>
+      <label for="currency">Base currency</label>
+      <select id="currency" name="currency">
+        <option value="GBP" selected>GBP</option>
+        <option value="EUR">EUR</option>
+        <option value="CHF">CHF</option>
+        <option value="USD">USD</option>
+      </select>
+    </div>
+  </div>
+
+  <label for="members">Members (comma-separated)</label>
+  <input type="text" id="members" name="members" placeholder="Stuart, Neil, Frances, Barry">
+
+  <button type="submit">Create Trip</button>
+</form>
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}{{ trip.name }}{% endblock %}
+{% block content %}
+<a href="/" class="home-link">&larr; All trips</a>
+<h1>{{ trip.name }} <span class="badge">{{ trip.currency }}</span></h1>
+
+{# --- Settle Up --- #}
+{% if debts %}
+<h2>Settle Up</h2>
+<div class="card">
+  {% for d in debts %}
+  <div class="debt-item">
+    <strong>{{ d.from }}</strong> owes <strong>{{ d.to }}</strong>
+    &pound;{{ "%.2f"|format(d.amount) }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{# --- Members --- #}
+<h2>Members</h2>
+<div class="card">
+  {% for m in members %}
+  {% set b = balances.get(m.id, {}) %}
+  <div style="display:flex; justify-content:space-between; padding:4px 0;">
+    <a href="/t/{{ trip.slug }}/{{ m.id }}">{{ m.name }}</a>
+    <span style="{% if b.balance < 0 %}color:#dc2626{% elif b.balance > 0 %}color:#16a34a{% endif %}">
+      {% if b.balance > 0 %}+{% endif %}&pound;{{ "%.2f"|format(b.balance) }}
+    </span>
+  </div>
+  {% endfor %}
+
+  <form method="post" action="/t/{{ trip.slug }}/member" style="margin-top:12px; display:flex; gap:8px;">
+    <input type="text" name="name" placeholder="Add member" style="margin:0; flex:1;">
+    <button type="submit" class="btn-small">Add</button>
+  </form>
+</div>
+
+{# --- Add Expense --- #}
+<h2>Add Expense</h2>
+<form method="post" action="/t/{{ trip.slug }}/expense" class="card">
+  <label for="description">What</label>
+  <input type="text" id="description" name="description" required placeholder="Dinner at Le Rascard">
+
+  <div class="grid-3">
+    <div>
+      <label for="amount">Amount</label>
+      <input type="number" id="amount" name="amount" step="0.01" required placeholder="125.00">
+    </div>
+    <div>
+      <label for="currency">Currency</label>
+      <select id="currency" name="currency">
+        <option value="{{ trip.currency }}" selected>{{ trip.currency }}</option>
+        {% for c in ["GBP", "EUR", "CHF", "USD", "PLN", "NOK"] %}
+          {% if c != trip.currency %}
+          <option value="{{ c }}">{{ c }}</option>
+          {% endif %}
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="date">Date</label>
+      <input type="date" id="date" name="date">
+    </div>
+  </div>
+
+  <label for="paid_by">Paid by</label>
+  <select id="paid_by" name="paid_by">
+    {% for m in members %}
+    <option value="{{ m.id }}">{{ m.name }}</option>
+    {% endfor %}
+  </select>
+
+  <label>Split between</label>
+  <div class="checks">
+    {% for m in members %}
+    <label><input type="checkbox" name="involved" value="{{ m.id }}" checked> {{ m.name }}</label>
+    {% endfor %}
+  </div>
+
+  <button type="submit">Add Expense</button>
+</form>
+
+{# --- Expenses --- #}
+{% if expenses %}
+<h2>Expenses</h2>
+{% for exp in expenses %}
+<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+  <div>
+    <strong>{{ exp.description }}</strong>
+    <div class="muted">{{ exp.date }} &middot; paid by {{ exp.paid_by_name }}
+      {% if exp.currency != trip.currency %}<span class="badge">{{ exp.currency }}</span>{% endif %}
+    </div>
+    <div class="muted">
+      Split: {{ exp.shares|map(attribute='member_name')|join(', ') }}
+    </div>
+  </div>
+  <div style="text-align:right;">
+    <strong>{{ "%.2f"|format(exp.amount) }}</strong>
+    <form method="post" action="/t/{{ trip.slug }}/expense/{{ exp.id }}/delete"
+          style="margin-top:4px;"
+          onsubmit="return confirm('Delete this expense?')">
+      <button type="submit" class="btn-small btn-danger">Del</button>
+    </form>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{# --- Record Settlement --- #}
+{% if debts %}
+<h2>Record Settlement</h2>
+<form method="post" action="/t/{{ trip.slug }}/settle" class="card">
+  <div class="grid-2">
+    <div>
+      <label for="from_member">From</label>
+      <select id="from_member" name="from_member">
+        {% for m in members %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="to_member">To</label>
+      <select id="to_member" name="to_member">
+        {% for m in members %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div>
+      <label for="settle_amount">Amount</label>
+      <input type="number" id="settle_amount" name="amount" step="0.01" required>
+    </div>
+    <div>
+      <label for="settle_currency">Currency</label>
+      <select id="settle_currency" name="currency">
+        <option value="{{ trip.currency }}">{{ trip.currency }}</option>
+      </select>
+    </div>
+  </div>
+  <label for="settle_date">Date</label>
+  <input type="date" id="settle_date" name="date">
+  <button type="submit">Record Payment</button>
+</form>
+{% endif %}
+
+{# --- Settlements --- #}
+{% if settlements %}
+<h2>Settlements</h2>
+{% for s in settlements %}
+<div class="card">
+  <strong>{{ s.from_name }}</strong> paid <strong>{{ s.to_name }}</strong>
+  {{ "%.2f"|format(s.amount) }} {{ s.currency }}
+  <span class="muted">&middot; {{ s.date }}</span>
+</div>
+{% endfor %}
+{% endif %}
+
+{# --- FX Rates --- #}
+<h2>FX Rates <span class="muted">(to {{ trip.currency }})</span></h2>
+<form method="post" action="/t/{{ trip.slug }}/fx" class="card">
+  {% set currencies_used = [] %}
+  {% for exp in expenses %}
+    {% if exp.currency != trip.currency and exp.currency not in currencies_used %}
+      {% set _ = currencies_used.append(exp.currency) %}
+    {% endif %}
+  {% endfor %}
+  {% if currencies_used %}
+    {% for c in currencies_used %}
+    <div class="grid-2">
+      <label style="align-self:center;">1 {{ c }} =</label>
+      <input type="number" name="fx_{{ c }}" step="0.0001"
+             value="{{ trip.fx_rates.get(c, '') }}" placeholder="e.g. 0.84">
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn-small">Save Rates</button>
+  {% else %}
+    <p class="muted">All expenses in {{ trip.currency }} — no FX needed.</p>
+  {% endif %}
+</form>
+{% endblock %}

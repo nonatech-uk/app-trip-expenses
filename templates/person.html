@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{{ trip.name }} — {{ member.name }}{% endblock %}
+{% block content %}
+<a href="/t/{{ trip.slug }}" class="home-link">&larr; {{ trip.name }}</a>
+<h1>{{ member.name }}</h1>
+
+{# --- Balance summary --- #}
+{% if balance < 0 %}
+<div class="summary-box owes">
+  You owe <strong>&pound;{{ "%.2f"|format(balance|abs) }}</strong>
+</div>
+{% elif balance > 0 %}
+<div class="summary-box owed">
+  You are owed <strong>&pound;{{ "%.2f"|format(balance) }}</strong>
+</div>
+{% else %}
+<div class="summary-box settled">
+  All settled up!
+</div>
+{% endif %}
+
+{# --- What to pay / receive --- #}
+{% set to_pay = [] %}
+{% set to_receive = [] %}
+{% for d in debts %}
+  {% if d.from == member.name %}{% set _ = to_pay.append(d) %}{% endif %}
+  {% if d.to == member.name %}{% set _ = to_receive.append(d) %}{% endif %}
+{% endfor %}
+
+{% if to_pay %}
+<h2>You Need To Pay</h2>
+<div class="card">
+  {% for d in to_pay %}
+  <div class="debt-item">
+    Pay <strong>{{ d.to }}</strong> &pound;{{ "%.2f"|format(d.amount) }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if to_receive %}
+<h2>You Are Owed</h2>
+<div class="card">
+  {% for d in to_receive %}
+  <div class="debt-item">
+    <strong>{{ d.from }}</strong> owes you &pound;{{ "%.2f"|format(d.amount) }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{# --- Expenses --- #}
+{% if expenses %}
+<h2>Your Expenses</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Description</th>
+      <th class="amount">Total</th>
+      <th class="amount">Your Share</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% set ns = namespace(total_share=0) %}
+    {% for exp in expenses %}
+    <tr>
+      <td class="muted">{{ exp.date }}</td>
+      <td>{{ exp.description }}
+        {% if exp.paid_by == member.id %}<span class="badge">you paid</span>{% endif %}
+        {% if exp.currency != trip.currency %}<span class="badge">{{ exp.currency }}</span>{% endif %}
+      </td>
+      <td class="amount">{{ "%.2f"|format(exp.amount) }}</td>
+      <td class="amount">{{ "%.2f"|format(exp.my_share) }}</td>
+    </tr>
+    {% set ns.total_share = ns.total_share + exp.my_share %}
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr>
+      <th colspan="3">Total your share</th>
+      <th class="amount">&pound;{{ "%.2f"|format(ns.total_share) }}</th>
+    </tr>
+  </tfoot>
+</table>
+{% endif %}
+{% endblock %}
