@@ -1,7 +1,9 @@
 """Expense CRUD endpoints."""
 
+from __future__ import annotations
+
 from collections import defaultdict
-from datetime import date
+import datetime
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -22,7 +24,7 @@ class ExpenseCreate(BaseModel):
     amount: str
     currency: str = "GBP"
     paid_by: int
-    date: date | None = None
+    date: datetime.date | None = None
     involved: list[int] = []
 
 
@@ -85,7 +87,7 @@ def add_expense(
         raise HTTPException(404, "Trip not found")
     trip_id = trip[0]
 
-    exp_date = body.date or date.today()
+    exp_date = body.date or datetime.date.today()
     involved = body.involved
 
     if not involved:

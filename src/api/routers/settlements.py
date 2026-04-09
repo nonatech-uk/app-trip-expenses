@@ -1,6 +1,8 @@
 """Settlement endpoints."""
 
-from datetime import date
+from __future__ import annotations
+
+import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -20,7 +22,7 @@ class SettlementCreate(BaseModel):
     to_member: int
     amount: str
     currency: str = "GBP"
-    date: date | None = None
+    date: datetime.date | None = None
 
 
 @router.get("/trips/{slug}/settlements")
@@ -59,7 +61,7 @@ def add_settlement(
     if not trip:
         raise HTTPException(404, "Trip not found")
 
-    s_date = body.date or date.today()
+    s_date = body.date or datetime.date.today()
     cur.execute(
         "INSERT INTO settlement (trip_id, from_member, to_member, amount, currency, date) "
         "VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
