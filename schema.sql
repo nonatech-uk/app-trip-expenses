@@ -4,6 +4,7 @@ CREATE TABLE trip (
     slug        text NOT NULL UNIQUE,
     currency    char(3) NOT NULL DEFAULT 'GBP',
     fx_rates    jsonb NOT NULL DEFAULT '{}',  -- e.g. {"EUR": 0.84, "CHF": 0.90} → 1 EUR = 0.84 GBP
+    active      boolean NOT NULL DEFAULT false,
     created_at  timestamptz NOT NULL DEFAULT now()
 );
 
@@ -23,6 +24,8 @@ CREATE TABLE expense (
     amount      numeric(12,2) NOT NULL,
     currency    char(3) NOT NULL,
     date        date NOT NULL DEFAULT CURRENT_DATE,
+    source      text DEFAULT 'manual',      -- manual | pipeline
+    pipeline_ref text,                       -- pipeline envelope ID for dedup
     created_at  timestamptz NOT NULL DEFAULT now()
 );
 

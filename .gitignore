@@ -2,3 +2,11 @@ config/.env
 __pycache__/
 *.pyc
 .venv/
+node_modules/
+dist/
+static/
+*.egg-info/
+
+# Shared libraries copied during build
+mees-shared-py/
+mees-shared-ui/

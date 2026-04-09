@@ -1,7 +1,3 @@
-splitwise>=3.0.0
-psycopg2-binary
-pydantic-settings
-python-dotenv
-fastapi
+mees-shared @ file:///tmp/mees-shared-py
+python-multipart
 uvicorn[standard]
-jinja2
