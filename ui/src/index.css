@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@import "@mees/shared-ui/styles/theme.css";
+
+@theme {
+  --color-accent: #2563eb;
+  --color-accent-hover: #1d4ed8;
+  --color-positive: #16a34a;
+  --color-negative: #dc2626;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
